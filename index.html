@@ -6,15 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>軽音班 講堂予約フォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Babel standalone: ブラウザ上でJSX/TypeScriptをコンパイルします -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
-        /* スクロールバーのカスタマイズ */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
     </style>
     <script type="importmap">
 {
@@ -24,7 +24,6 @@
     "@heroicons/react/24/outline": "https://esm.sh/@heroicons/react@2.1.1/24/outline",
     "date-fns": "https://esm.sh/date-fns@4.1.0",
     "date-fns/locale": "https://esm.sh/date-fns@4.1.0/locale",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/",
     "date-fns/": "https://esm.sh/date-fns@^4.1.0/",
     "react/": "https://esm.sh/react@^19.2.3/"
@@ -34,7 +33,242 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
-    <!-- 1つのファイルに集約することで404エラーを回避 -->
-    <script type="text/babel" data-type="module" data-presets="react" src="index.tsx"></script>
+
+    <!-- 全てのロジックをここに集約 -->
+    <script type="text/babel" data-presets="react">
+        import React, { useState, useEffect, useMemo } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { 
+            MusicalNoteIcon, Cog6ToothIcon, PlusIcon, TrashIcon, 
+            ChevronLeftIcon, ChevronRightIcon, ArrowPathIcon
+        } from '@heroicons/react/24/outline';
+        import { 
+            format, endOfMonth, eachDayOfInterval, isSameDay, isPast, getDay 
+        } from 'date-fns';
+        import { ja } from 'date-fns/locale';
+
+        const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxE2yxvOsFM-ReaI2kYCQj4UrVWqj0VdKly61x_l9fnPCwpkxTetmUTtjpEopHvu5GA/exec";
+        const DEFAULT_RULES = [
+            { dayOfWeek: 1, slots: ["16:00-17:00", "17:00-18:00"] },
+            { dayOfWeek: 2, slots: ["16:00-17:00", "17:00-18:00"] },
+            { dayOfWeek: 4, slots: ["16:00-17:00", "17:00-18:00"] },
+            { dayOfWeek: 5, slots: ["17:00-18:00"] },
+        ];
+        const DAYS_OF_WEEK = ["日", "月", "火", "水", "木", "金", "土"];
+
+        const App = () => {
+            const [role, setRole] = useState('STUDENT');
+            const [isLoading, setIsLoading] = useState(true);
+            const [isSyncing, setIsSyncing] = useState(false);
+            const [bookings, setBookings] = useState([]);
+            const [rules, setRules] = useState(DEFAULT_RULES);
+            const [specialSchedules, setSpecialSchedules] = useState([]);
+            const [currentMonth, setCurrentMonth] = useState(new Date());
+            const [selectedDate, setSelectedDate] = useState(null);
+            const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+            const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+            const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+
+            const fetchCloudData = async () => {
+                setIsLoading(true);
+                try {
+                    const response = await fetch(GAS_WEBAPP_URL);
+                    const data = await response.json();
+                    if (data.bookings) setBookings(data.bookings);
+                    if (data.rules) setRules(data.rules);
+                    if (data.specialSchedules) setSpecialSchedules(data.specialSchedules);
+                } catch (e) { console.error("Fetch error:", e); }
+                finally { setIsLoading(false); }
+            };
+
+            const saveToCloud = async (nb, nr, ns) => {
+                setIsSyncing(true);
+                try {
+                    await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({ bookings: nb, rules: nr, specialSchedules: ns }),
+                    });
+                } catch (e) { console.error("Save error:", e); }
+                finally { setTimeout(() => setIsSyncing(false), 1500); }
+            };
+
+            useEffect(() => { fetchCloudData(); }, []);
+
+            const updateAndSync = (nb, nr, ns) => {
+                setBookings(nb); setRules(nr); setSpecialSchedules(ns);
+                saveToCloud(nb, nr, ns);
+            };
+
+            const getSlotsForDate = (date) => {
+                const ds = format(date, 'yyyy-MM-dd');
+                const sp = specialSchedules.find(s => s.date === ds);
+                if (sp) return sp.isDisabled ? [] : sp.slots;
+                const rule = rules.find(r => r.dayOfWeek === getDay(date));
+                return rule ? rule.slots : [];
+            };
+
+            const handleAddBooking = (dateStr, slot, band) => {
+                if (!band.trim()) return alert("バンド名を入力してください");
+                const nb = [...bookings, {
+                    id: `id-${Date.now()}`,
+                    date: dateStr, timeSlot: slot, bandName: band, createdAt: Date.now()
+                }];
+                updateAndSync(nb, rules, specialSchedules);
+            };
+
+            const days = useMemo(() => {
+                const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+                const end = endOfMonth(currentMonth);
+                return eachDayOfInterval({ start, end });
+            }, [currentMonth]);
+
+            if (isLoading) return (
+                <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
+                    <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="font-black text-slate-400 animate-pulse tracking-widest text-sm">LOADING...</p>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen pb-20">
+                    <header className="bg-indigo-700 text-white p-4 sticky top-0 z-40 shadow-xl flex justify-between items-center px-4 md:px-8">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/20 p-2 rounded-xl"><MusicalNoteIcon className="w-6 h-6" /></div>
+                            <div>
+                                <h1 className="text-xl font-black tracking-tighter uppercase leading-none">軽音班 予約</h1>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></div>
+                                    <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{isSyncing ? 'SYNCING...' : 'ONLINE'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setRole(role === 'STUDENT' ? 'ADVISOR' : 'STUDENT')} className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${role === 'ADVISOR' ? 'bg-amber-400 text-slate-900' : 'bg-indigo-600 border border-indigo-500 hover:bg-indigo-500'}`}>
+                                {role === 'ADVISOR' ? '顧問モード' : '生徒モード'}
+                            </button>
+                            <button onClick={fetchCloudData} className="p-2 hover:bg-white/10 rounded-xl"><ArrowPathIcon className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} /></button>
+                            {role === 'ADVISOR' && <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 hover:bg-white/10 rounded-xl"><Cog6ToothIcon className="w-6 h-6" /></button>}
+                        </div>
+                    </header>
+
+                    <main className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
+                        <div className="flex items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="p-3 hover:bg-slate-100 rounded-2xl"><ChevronLeftIcon className="w-6 h-6" /></button>
+                            <h2 className="text-2xl font-black text-slate-800 tracking-tighter">{format(currentMonth, 'yyyy年 MMMM', { locale: ja })}</h2>
+                            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-3 hover:bg-slate-100 rounded-2xl"><ChevronRightIcon className="w-6 h-6" /></button>
+                        </div>
+
+                        <div className="calendar-grid gap-2">
+                            {DAYS_OF_WEEK.map(d => <div key={d} className="p-2 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{d}</div>)}
+                            {Array.from({ length: getDay(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)) }).map((_, i) => <div key={i} className="bg-slate-100/50 rounded-2xl h-32 md:h-44" />)}
+                            {days.map(date => {
+                                const ds = format(date, 'yyyy-MM-dd');
+                                const activeSlots = getSlotsForDate(date);
+                                const dateBookings = bookings.filter(b => b.date === ds);
+                                const isToday = isSameDay(date, new Date());
+                                const past = isPast(date) && !isToday;
+                                return (
+                                    <div key={ds} onClick={() => !past && (setSelectedDate(date), setIsBookingModalOpen(true))} className={`bg-white min-h-[8rem] md:min-h-[11rem] p-3 rounded-3xl border-2 transition-all group cursor-pointer ${past ? 'opacity-30' : 'border-slate-100 hover:border-indigo-400 hover:shadow-xl hover:-translate-y-1'}`}>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className={`text-sm font-black w-8 h-8 flex items-center justify-center rounded-xl ${isToday ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 group-hover:text-indigo-600'}`}>{format(date, 'd')}</span>
+                                            {activeSlots.length > 0 && !past && <div className="w-2 h-2 rounded-full bg-emerald-400"></div>}
+                                        </div>
+                                        <div className="space-y-1">
+                                            {dateBookings.map(b => (
+                                                <div key={b.id} className="text-[9px] p-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-bold truncate">
+                                                    <span className="opacity-40 mr-1">{b.timeSlot.split('-')[0]}</span>{b.bandName}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </main>
+
+                    {isBookingModalOpen && selectedDate && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">
+                                <div className="bg-indigo-700 p-8 text-white relative">
+                                    <h3 className="text-2xl font-black tracking-tighter">{format(selectedDate, 'M月 d日 (E)', { locale: ja })}</h3>
+                                    <button onClick={() => (setIsBookingModalOpen(false), setConfirmingDeleteId(null))} className="absolute top-8 right-8 p-2 hover:bg-white/10 rounded-full">✕</button>
+                                </div>
+                                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                                    {getSlotsForDate(selectedDate).length === 0 ? <p className="text-center py-10 text-slate-400 font-bold italic">予約枠がありません</p> :
+                                        getSlotsForDate(selectedDate).map(slot => {
+                                            const booking = bookings.find(b => b.date === format(selectedDate, 'yyyy-MM-dd') && b.timeSlot === slot);
+                                            return (
+                                                <div key={slot} className="p-4 rounded-2xl border-2 flex items-center justify-between border-slate-100">
+                                                    <span className="font-black text-slate-700">{slot}</span>
+                                                    {booking ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-[11px] font-black">{booking.bandName}</span>
+                                                            <button onClick={() => setConfirmingDeleteId(booking.id)} className="p-2 text-slate-300 hover:text-red-500"><TrashIcon className="w-5 h-5" /></button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-2">
+                                                            <input id={`band-${slot}`} placeholder="バンド名" className="w-28 px-3 py-2 border rounded-xl text-xs font-bold" />
+                                                            <button onClick={() => handleAddBooking(format(selectedDate, 'yyyy-MM-dd'), slot, document.getElementById(`band-${slot}`).value)} className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg"><PlusIcon className="w-5 h-5" /></button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    }
+                                    {confirmingDeleteId && (
+                                        <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl">
+                                            <p className="text-[10px] font-black text-red-600 mb-3 text-center uppercase">予約を削除しますか？</p>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => (updateAndSync(bookings.filter(b => b.id !== confirmingDeleteId), rules, specialSchedules), setConfirmingDeleteId(null))} className="flex-1 bg-red-600 text-white py-2.5 rounded-xl text-xs font-black">削除する</button>
+                                                <button onClick={() => setConfirmingDeleteId(null)} className="flex-1 bg-white border border-slate-200 text-slate-400 py-2.5 rounded-xl text-xs font-black">キャンセル</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-6 bg-slate-50 border-t flex justify-end">
+                                    <button onClick={() => setIsBookingModalOpen(false)} className="px-10 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black">閉じる</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {isSettingsModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                                <div className="bg-amber-500 p-8 text-white">
+                                    <h3 className="text-2xl font-black tracking-tighter">週間スケジュールの管理</h3>
+                                </div>
+                                <div className="p-8 overflow-y-auto space-y-4">
+                                    {DAYS_OF_WEEK.map((day, idx) => {
+                                        const r = rules.find(x => x.dayOfWeek === idx);
+                                        return (
+                                            <div key={day} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                                                <span className="w-12 font-black text-slate-800">{day}曜</span>
+                                                <div className="flex flex-wrap gap-2 flex-grow">
+                                                    {r?.slots.map(s => (
+                                                        <span key={s} className="bg-white border px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-sm">
+                                                            {s} <button onClick={() => updateAndSync(bookings, rules.map(x => x.dayOfWeek === idx ? {...x, slots: x.slots.filter(y => y !== s)} : x), specialSchedules)} className="text-slate-300 hover:text-red-500">✕</button>
+                                                        </span>
+                                                    ))}
+                                                    <button onClick={() => { const ns = prompt("例: 16:00-17:00"); if(ns) updateAndSync(bookings, rules.map(x => x.dayOfWeek === idx ? {...x, slots: [...x.slots, ns].sort()} : x), specialSchedules); }} className="bg-white border-2 border-dashed border-amber-300 text-amber-600 px-3 py-1.5 rounded-xl text-xs font-black">+ 追加</button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="p-6 bg-slate-50 border-t flex justify-end">
+                                    <button onClick={() => setIsSettingsModalOpen(false)} className="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black">設定完了</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
