@@ -7,7 +7,6 @@
     <title>軽音班 講堂予約システム</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
-    <!-- Babel standalone: ブラウザ上で即座にコードを変換して実行します -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
@@ -34,7 +33,6 @@
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
 
-    <!-- ここに全てのプログラム（Types, Constants, App）を書き込みます -->
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useMemo } from 'react';
         import ReactDOM from 'react-dom/client';
@@ -47,7 +45,6 @@
         } from 'date-fns';
         import { ja } from 'date-fns/locale';
 
-        // --- 設定・定数 ---
         const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxE2yxvOsFM-ReaI2kYCQj4UrVWqj0VdKly61x_l9fnPCwpkxTetmUTtjpEopHvu5GA/exec";
         const DEFAULT_RULES = [
             { dayOfWeek: 1, slots: ["16:00-17:00", "17:00-18:00"] },
@@ -70,7 +67,6 @@
             const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
             const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
 
-            // クラウドからデータ取得
             const fetchCloudData = async () => {
                 setIsLoading(true);
                 try {
@@ -83,7 +79,6 @@
                 finally { setIsLoading(false); }
             };
 
-            // クラウドへデータ保存
             const saveToCloud = async (nb, nr, ns) => {
                 setIsSyncing(true);
                 try {
@@ -118,6 +113,46 @@
                     date: dateStr, timeSlot: slot, bandName: band, createdAt: Date.now()
                 }];
                 updateAndSync(nb, rules, specialSchedules);
+            };
+
+            // --- 臨時スケジュールの操作ロジック ---
+            const addSpecialSlot = (date) => {
+                const ds = format(date, 'yyyy-MM-dd');
+                const newSlot = prompt("この日に追加する時間枠 (例: 15:00-16:00)");
+                if (!newSlot) return;
+                
+                let newSpecials = [...specialSchedules];
+                const existing = newSpecials.find(s => s.date === ds);
+                if (existing) {
+                    newSpecials = newSpecials.map(s => s.date === ds ? { ...s, slots: [...s.slots, newSlot].sort(), isDisabled: false } : s);
+                } else {
+                    const baseSlots = getSlotsForDate(date);
+                    newSpecials.push({ date: ds, slots: [...baseSlots, newSlot].sort(), isDisabled: false });
+                }
+                updateAndSync(bookings, rules, newSpecials);
+            };
+
+            const removeSpecialSlot = (date, slotToRemove) => {
+                const ds = format(date, 'yyyy-MM-dd');
+                let newSpecials = [...specialSchedules];
+                const existing = newSpecials.find(s => s.date === ds);
+                const currentSlots = existing ? existing.slots : getSlotsForDate(date);
+                const updatedSlots = currentSlots.filter(s => s !== slotToRemove);
+                
+                if (existing) {
+                    newSpecials = newSpecials.map(s => s.date === ds ? { ...s, slots: updatedSlots, isDisabled: updatedSlots.length === 0 } : s);
+                } else {
+                    newSpecials.push({ date: ds, slots: updatedSlots, isDisabled: updatedSlots.length === 0 });
+                }
+                updateAndSync(bookings, rules, newSpecials);
+            };
+
+            const resetSpecialDay = (date) => {
+                const ds = format(date, 'yyyy-MM-dd');
+                if (confirm("この日の変更を破棄して通常のスケジュールに戻しますか？")) {
+                    const newSpecials = specialSchedules.filter(s => s.date !== ds);
+                    updateAndSync(bookings, rules, newSpecials);
+                }
             };
 
             const days = useMemo(() => {
@@ -171,11 +206,16 @@
                                 const dateBookings = bookings.filter(b => b.date === ds);
                                 const isToday = isSameDay(date, new Date());
                                 const past = isPast(date) && !isToday;
+                                const isModified = specialSchedules.some(s => s.date === ds);
+
                                 return (
                                     <div key={ds} onClick={() => !past && (setSelectedDate(date), setIsBookingModalOpen(true))} className={`bg-white min-h-[8rem] md:min-h-[11rem] p-3 rounded-3xl border-2 transition-all group cursor-pointer ${past ? 'opacity-30' : 'border-slate-100 hover:border-indigo-400 hover:shadow-xl hover:-translate-y-1'}`}>
                                         <div className="flex justify-between items-start mb-2">
                                             <span className={`text-sm font-black w-8 h-8 flex items-center justify-center rounded-xl ${isToday ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 group-hover:text-indigo-600'}`}>{format(date, 'd')}</span>
-                                            {activeSlots.length > 0 && !past && <div className="w-2 h-2 rounded-full bg-emerald-400"></div>}
+                                            <div className="flex flex-col gap-1 items-end">
+                                                {activeSlots.length > 0 && !past && <div className="w-2 h-2 rounded-full bg-emerald-400"></div>}
+                                                {isModified && <div className="text-[8px] font-black text-amber-500 bg-amber-50 px-1 rounded border border-amber-100 leading-none py-0.5">変則</div>}
+                                            </div>
                                         </div>
                                         <div className="space-y-1">
                                             {dateBookings.map(b => (
@@ -198,12 +238,30 @@
                                     <button onClick={() => (setIsBookingModalOpen(false), setConfirmingDeleteId(null))} className="absolute top-8 right-8 p-2 hover:bg-white/10 rounded-full">✕</button>
                                 </div>
                                 <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                                    {/* 顧問用：この日の臨時設定セクション */}
+                                    {role === 'ADVISOR' && (
+                                        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 mb-2">
+                                            <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-3 text-center">この日限定の臨時設定</p>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => addSpecialSlot(selectedDate)} className="flex-1 bg-white border border-amber-300 text-amber-700 py-2.5 rounded-xl text-[11px] font-black shadow-sm active:scale-95 transition-all">枠を追加</button>
+                                                {specialSchedules.some(s => s.date === format(selectedDate, 'yyyy-MM-dd')) && (
+                                                    <button onClick={() => resetSpecialDay(selectedDate)} className="flex-1 bg-white border border-slate-300 text-slate-500 py-2.5 rounded-xl text-[11px] font-black active:scale-95 transition-all">リセット</button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {getSlotsForDate(selectedDate).length === 0 ? <p className="text-center py-10 text-slate-400 font-bold italic">予約枠がありません</p> :
                                         getSlotsForDate(selectedDate).map(slot => {
                                             const booking = bookings.find(b => b.date === format(selectedDate, 'yyyy-MM-dd') && b.timeSlot === slot);
                                             return (
-                                                <div key={slot} className="p-4 rounded-2xl border-2 flex items-center justify-between border-slate-100">
-                                                    <span className="font-black text-slate-700">{slot}</span>
+                                                <div key={slot} className="p-4 rounded-2xl border-2 flex items-center justify-between border-slate-100 bg-white shadow-sm">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-black text-slate-700">{slot}</span>
+                                                        {role === 'ADVISOR' && !booking && (
+                                                            <button onClick={() => removeSpecialSlot(selectedDate, slot)} className="text-[10px] text-red-400 font-bold text-left hover:underline">この枠を消す</button>
+                                                        )}
+                                                    </div>
                                                     {booking ? (
                                                         <div className="flex items-center gap-2">
                                                             <span className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-[11px] font-black">{booking.bandName}</span>
@@ -211,8 +269,8 @@
                                                         </div>
                                                     ) : (
                                                         <div className="flex gap-2">
-                                                            <input id={`band-${slot}`} placeholder="バンド名" className="w-28 px-3 py-2 border rounded-xl text-xs font-bold" />
-                                                            <button onClick={() => handleAddBooking(format(selectedDate, 'yyyy-MM-dd'), slot, document.getElementById(`band-${slot}`).value)} className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-100"><PlusIcon className="w-5 h-5" /></button>
+                                                            <input id={`band-${slot}`} placeholder="バンド名" className="w-28 px-3 py-2 border rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                                            <button onClick={() => handleAddBooking(format(selectedDate, 'yyyy-MM-dd'), slot, document.getElementById(`band-${slot}`).value)} className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-100 active:scale-90 transition-all"><PlusIcon className="w-5 h-5" /></button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -230,7 +288,7 @@
                                     )}
                                 </div>
                                 <div className="p-6 bg-slate-50 border-t flex justify-end">
-                                    <button onClick={() => setIsBookingModalOpen(false)} className="px-10 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black">閉じる</button>
+                                    <button onClick={() => setIsBookingModalOpen(false)} className="px-10 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black active:scale-95 transition-all">閉じる</button>
                                 </div>
                             </div>
                         </div>
@@ -241,6 +299,7 @@
                             <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
                                 <div className="bg-amber-500 p-8 text-white">
                                     <h3 className="text-2xl font-black tracking-tighter">週間スケジュールの管理</h3>
+                                    <p className="text-[10px] font-bold text-amber-100 uppercase tracking-widest mt-1 underline">ここで設定した時間は、毎週自動的に繰り返されます</p>
                                 </div>
                                 <div className="p-8 overflow-y-auto space-y-4">
                                     {DAYS_OF_WEEK.map((day, idx) => {
@@ -254,14 +313,15 @@
                                                             {s} <button onClick={() => updateAndSync(bookings, rules.map(x => x.dayOfWeek === idx ? {...x, slots: x.slots.filter(y => y !== s)} : x), specialSchedules)} className="text-slate-300 hover:text-red-500">✕</button>
                                                         </span>
                                                     ))}
-                                                    <button onClick={() => { const ns = prompt("例: 16:00-17:00"); if(ns) updateAndSync(bookings, rules.map(x => x.dayOfWeek === idx ? {...x, slots: [...x.slots, ns].sort()} : x), specialSchedules); }} className="bg-white border-2 border-dashed border-amber-300 text-amber-600 px-3 py-1.5 rounded-xl text-xs font-black">+ 追加</button>
+                                                    <button onClick={() => { const ns = prompt("例: 16:00-17:00"); if(ns) updateAndSync(bookings, rules.map(x => x.dayOfWeek === idx ? {...x, slots: [...x.slots, ns].sort()} : x), specialSchedules); }} className="bg-white border-2 border-dashed border-amber-300 text-amber-600 px-3 py-1.5 rounded-xl text-xs font-black hover:bg-amber-50 active:scale-95 transition-all">+ 追加</button>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
-                                <div className="p-6 bg-slate-50 border-t flex justify-end">
-                                    <button onClick={() => setIsSettingsModalOpen(false)} className="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black">設定完了</button>
+                                <div className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+                                    <button onClick={() => { if(confirm("全てのデータを初期化しますか？")) updateAndSync([], DEFAULT_RULES, []); }} className="px-6 py-4 bg-red-100 text-red-600 rounded-2xl font-black text-xs hover:bg-red-600 hover:text-white transition-all">全リセット</button>
+                                    <button onClick={() => setIsSettingsModalOpen(false)} className="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl active:scale-95 transition-all">設定完了</button>
                                 </div>
                             </div>
                         </div>
