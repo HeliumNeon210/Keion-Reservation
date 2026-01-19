@@ -10,6 +10,11 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
     <script type="importmap">
 {
@@ -20,16 +25,16 @@
     "date-fns": "https://esm.sh/date-fns@4.1.0",
     "date-fns/locale": "https://esm.sh/date-fns@4.1.0/locale",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/",
-    "date-fns/": "https://esm.sh/date-fns@^4.1.0/"
+    "date-fns/": "https://esm.sh/date-fns@^4.1.0/",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
-    <!-- data-presets に react を明記し、拡張子ありで読み込む -->
-    <script type="text/babel" data-type="module" data-presets="react" src="./index.tsx"></script>
+    <!-- 1つのファイルに集約することで404エラーを回避 -->
+    <script type="text/babel" data-type="module" data-presets="react" src="index.tsx"></script>
 </body>
 </html>
