@@ -7,6 +7,8 @@
     <title>軽音班 講堂予約フォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- ブラウザで直接TSXを動かすためのトランスパイラ -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
     </style>
@@ -15,18 +17,24 @@
   "imports": {
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
-    "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "@heroicons/react/24/outline": "https://esm.sh/@heroicons/react@2.1.1/24/outline",
     "date-fns/": "https://esm.sh/date-fns@^4.1.0/",
-    "date-fns": "https://esm.sh/date-fns@^4.1.0"
+    "date-fns": "https://esm.sh/date-fns@^4.1.0",
+    "date-fns/locale": "https://esm.sh/date-fns@4.1.0/locale",
+    "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    <!-- 
+      data-type="module" を指定することで import 構文を使えるようにし、
+      type="text/babel" でBabelに翻訳を任せます。
+    -->
+    <script type="text/babel" data-type="module" src="index.tsx"></script>
 </body>
 </html>
+
