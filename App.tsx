@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserRole, Booking, AvailabilityRule, SpecialSchedule } from './types';
-import { DEFAULT_RULES, DAYS_OF_WEEK } from './constants';
+import { UserRole, Booking, AvailabilityRule, SpecialSchedule } from './types.ts';
+import { DEFAULT_RULES, DAYS_OF_WEEK } from './constants.ts';
 import { 
   MusicalNoteIcon, Cog6ToothIcon, PlusIcon, TrashIcon, 
   ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, ArrowPathIcon,
@@ -17,7 +17,7 @@ import {
 } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
-// 設定済みのGAS URL
+// 確定したGAS URL
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxE2yxvOsFM-ReaI2kYCQj4UrVWqj0VdKly61x_l9fnPCwpkxTetmUTtjpEopHvu5GA/exec"; 
 
 const App: React.FC = () => {
@@ -174,7 +174,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-10">
       <header className="bg-indigo-700 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center px-4 md:px-8">
         <div className="flex items-center gap-3">
           <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
