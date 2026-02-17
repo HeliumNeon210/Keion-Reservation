@@ -2,17 +2,18 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>軽音班 講堂予約システム</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; }
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #f8fafc; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        input, select, button { font-size: 16px !important; } /* iOS zoom prevention */
     </style>
     <script type="importmap">
 {
@@ -24,13 +25,12 @@
     "date-fns/locale": "https://esm.sh/date-fns@4.1.0/locale",
     "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/",
     "date-fns/": "https://esm.sh/date-fns@^4.1.0/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
@@ -167,42 +167,42 @@
             if (isLoading) return (
                 <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
                     <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="font-black text-slate-400 animate-pulse tracking-widest text-sm uppercase">Loading Cloud Data...</p>
+                    <p className="font-black text-slate-400 animate-pulse tracking-widest text-sm uppercase text-center">Loading Cloud Data...</p>
                 </div>
             );
 
             return (
-                <div className="min-h-screen pb-20">
-                    <header className="bg-indigo-700 text-white p-4 sticky top-0 z-40 shadow-xl flex justify-between items-center px-4 md:px-8">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-white/20 p-2 rounded-xl"><MusicalNoteIcon className="w-6 h-6" /></div>
+                <div className="min-h-screen pb-10">
+                    <header className="bg-indigo-700 text-white p-3 md:p-4 sticky top-0 z-40 shadow-xl flex justify-between items-center px-4 md:px-8">
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <div className="bg-white/20 p-1.5 md:p-2 rounded-xl"><MusicalNoteIcon className="w-5 h-5 md:w-6 md:h-6" /></div>
                             <div>
-                                <h1 className="text-xl font-black tracking-tighter uppercase leading-none">軽音班 予約</h1>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></div>
-                                    <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{isSyncing ? 'Syncing...' : 'Online'}</span>
+                                <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase leading-none">軽音 予約</h1>
+                                <div className="flex items-center gap-1.5 mt-0.5 md:mt-1">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></div>
+                                    <span className="text-[8px] md:text-[10px] font-bold opacity-80 uppercase tracking-widest">{isSyncing ? 'Sync...' : 'Online'}</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setRole(role === 'STUDENT' ? 'ADVISOR' : 'STUDENT')} className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${role === 'ADVISOR' ? 'bg-amber-400 text-slate-900' : 'bg-indigo-600 border border-indigo-500 hover:bg-indigo-50'}`}>
-                                {role === 'ADVISOR' ? '顧問モード' : '生徒モード'}
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                            <button onClick={() => setRole(role === 'STUDENT' ? 'ADVISOR' : 'STUDENT')} className={`px-2 md:px-4 py-1.5 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-black transition-all ${role === 'ADVISOR' ? 'bg-amber-400 text-slate-900' : 'bg-indigo-600 border border-indigo-500 hover:bg-indigo-500'}`}>
+                                {role === 'ADVISOR' ? '顧問' : '生徒'}
                             </button>
-                            <button onClick={fetchCloudData} className="p-2 hover:bg-white/10 rounded-xl"><ArrowPathIcon className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} /></button>
-                            {role === 'ADVISOR' && <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 hover:bg-white/10 rounded-xl"><Cog6ToothIcon className="w-6 h-6" /></button>}
+                            <button onClick={fetchCloudData} className="p-1.5 md:p-2 hover:bg-white/10 rounded-xl"><ArrowPathIcon className={`w-4 h-4 md:w-5 md:h-5 ${isSyncing ? 'animate-spin' : ''}`} /></button>
+                            {role === 'ADVISOR' && <button onClick={() => setIsSettingsModalOpen(true)} className="p-1.5 md:p-2 hover:bg-white/10 rounded-xl"><Cog6ToothIcon className="w-5 h-5 md:w-6 md:h-6" /></button>}
                         </div>
                     </header>
 
-                    <main className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
-                        <div className="flex items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-3 hover:bg-slate-100 rounded-2xl"><ChevronLeftIcon className="w-6 h-6" /></button>
-                            <h2 className="text-2xl font-black text-slate-800 tracking-tighter">{format(currentMonth, 'yyyy年 MMMM', { locale: ja })}</h2>
-                            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-3 hover:bg-slate-100 rounded-2xl"><ChevronRightIcon className="w-6 h-6" /></button>
+                    <main className="max-w-5xl mx-auto p-2 md:p-8 space-y-4 md:space-y-6">
+                        <div className="flex items-center justify-between bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-slate-200">
+                            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-slate-100 rounded-xl"><ChevronLeftIcon className="w-5 h-5 md:w-6 md:h-6" /></button>
+                            <h2 className="text-base md:text-2xl font-black text-slate-800 tracking-tighter">{format(currentMonth, 'yyyy年 MMMM', { locale: ja })}</h2>
+                            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-slate-100 rounded-xl"><ChevronRightIcon className="w-5 h-5 md:w-6 md:h-6" /></button>
                         </div>
 
-                        <div className="calendar-grid gap-2">
-                            {DAYS_OF_WEEK.map(d => <div key={d} className="p-2 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{d}</div>)}
-                            {Array.from({ length: getDay(startOfMonth(currentMonth)) }).map((_, i) => <div key={i} className="bg-slate-100/50 rounded-2xl h-32 md:h-44" />)}
+                        <div className="calendar-grid gap-1 md:gap-2">
+                            {DAYS_OF_WEEK.map(d => <div key={d} className={`p-1 md:p-2 text-center text-[8px] md:text-[10px] font-black uppercase tracking-widest ${d === '日' ? 'text-red-400' : d === '土' ? 'text-indigo-400' : 'text-slate-400'}`}>{d}</div>)}
+                            {Array.from({ length: getDay(startOfMonth(currentMonth)) }).map((_, i) => <div key={i} className="bg-slate-100/50 rounded-xl md:rounded-2xl h-16 md:h-44" />)}
                             {days.map(date => {
                                 const ds = format(date, 'yyyy-MM-dd');
                                 const activeSlots = getSlotsForDate(date);
@@ -212,18 +212,18 @@
                                 const isModified = specialSchedules.some(s => s.date === ds);
 
                                 return (
-                                    <div key={ds} onClick={() => !past && (setSelectedDate(date), setIsBookingModalOpen(true))} className={`bg-white min-h-[8rem] md:min-h-[11rem] p-3 rounded-3xl border-2 transition-all group cursor-pointer ${past ? 'opacity-30' : 'border-slate-100 hover:border-indigo-400 hover:shadow-xl hover:-translate-y-1'}`}>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className={`text-sm font-black w-8 h-8 flex items-center justify-center rounded-xl ${isToday ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 group-hover:text-indigo-600'}`}>{format(date, 'd')}</span>
-                                            <div className="flex flex-col gap-1 items-end">
-                                                {activeSlots.length > 0 && !past && <div className="w-2 h-2 rounded-full bg-emerald-400"></div>}
-                                                {isModified && <div className="text-[8px] font-black text-amber-500 bg-amber-50 px-1 rounded border border-amber-100 leading-none py-0.5">変則</div>}
+                                    <div key={ds} onClick={() => !past && (setSelectedDate(date), setIsBookingModalOpen(true))} className={`bg-white min-h-[5rem] sm:min-h-[7rem] md:min-h-[11rem] p-1.5 md:p-3 rounded-xl md:rounded-3xl border transition-all group cursor-pointer ${past ? 'opacity-30' : 'border-slate-100 hover:border-indigo-400 hover:shadow-xl'}`}>
+                                        <div className="flex justify-between items-start mb-1 md:mb-2">
+                                            <span className={`text-[10px] md:text-sm font-black w-5 h-5 md:w-8 md:h-8 flex items-center justify-center rounded-lg md:rounded-xl ${isToday ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 group-hover:text-indigo-600'}`}>{format(date, 'd')}</span>
+                                            <div className="flex flex-col gap-0.5 md:gap-1 items-end shrink-0">
+                                                {activeSlots.length > 0 && !past && <div className="w-1 md:w-2 h-1 md:h-2 rounded-full bg-emerald-400"></div>}
+                                                {isModified && <div className="text-[6px] md:text-[8px] font-black text-amber-500 bg-amber-50 px-0.5 md:px-1 rounded border border-amber-100 leading-none py-0.5">変則</div>}
                                             </div>
                                         </div>
-                                        <div className="space-y-1">
+                                        <div className="space-y-0.5 md:space-y-1 overflow-hidden">
                                             {dateBookings.map(b => (
-                                                <div key={b.id} className="text-[9px] p-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-bold truncate">
-                                                    <span className="opacity-40 mr-1">{b.timeSlot.split('-')[0]}</span>{b.bandName}
+                                                <div key={b.id} className="text-[6px] md:text-[9px] p-0.5 md:p-1.5 bg-indigo-50 text-indigo-700 rounded-md md:rounded-lg font-bold truncate leading-tight">
+                                                    {b.bandName}
                                                 </div>
                                             ))}
                                         </div>
@@ -234,20 +234,20 @@
                     </main>
 
                     {isBookingModalOpen && selectedDate && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">
-                                <div className="bg-indigo-700 p-8 text-white relative">
-                                    <h3 className="text-2xl font-black tracking-tighter">{format(selectedDate, 'M月 d日 (E)', { locale: ja })}</h3>
-                                    <button onClick={() => (setIsBookingModalOpen(false), setConfirmingDeleteId(null))} className="absolute top-8 right-8 p-2 hover:bg-white/10 rounded-full">✕</button>
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+                            <div className="bg-white rounded-t-[2rem] md:rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in slide-in-from-bottom duration-300">
+                                <div className="bg-indigo-700 p-6 md:p-8 text-white relative">
+                                    <h3 className="text-xl md:text-2xl font-black tracking-tighter">{format(selectedDate, 'M月 d日 (E)', { locale: ja })}</h3>
+                                    <button onClick={() => (setIsBookingModalOpen(false), setConfirmingDeleteId(null))} className="absolute top-6 md:top-8 right-6 md:right-8 p-2 hover:bg-white/10 rounded-full">✕</button>
                                 </div>
-                                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                                <div className="p-4 md:p-6 space-y-4 max-h-[70vh] md:max-h-[60vh] overflow-y-auto">
                                     {role === 'ADVISOR' && (
-                                        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 mb-2">
-                                            <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-3 text-center">この日限定の臨時設定</p>
+                                        <div className="p-3 md:p-4 bg-amber-50 rounded-2xl border border-amber-200 mb-2">
+                                            <p className="text-[8px] md:text-[10px] font-black text-amber-800 uppercase tracking-widest mb-2 md:mb-3 text-center text-xs">この日限定の臨時設定</p>
                                             <div className="flex gap-2">
-                                                <button onClick={() => addSpecialSlot(selectedDate)} className="flex-1 bg-white border border-amber-300 text-amber-700 py-2.5 rounded-xl text-[11px] font-black shadow-sm active:scale-95 transition-all">枠を追加</button>
+                                                <button onClick={() => addSpecialSlot(selectedDate)} className="flex-1 bg-white border border-amber-300 text-amber-700 py-2 md:py-2.5 rounded-xl text-[10px] md:text-[11px] font-black shadow-sm active:scale-95 transition-all">枠を追加</button>
                                                 {specialSchedules.some(s => s.date === format(selectedDate, 'yyyy-MM-dd')) && (
-                                                    <button onClick={() => resetSpecialDay(selectedDate)} className="flex-1 bg-white border border-slate-300 text-slate-500 py-2.5 rounded-xl text-[11px] font-black active:scale-95 transition-all">リセット</button>
+                                                    <button onClick={() => resetSpecialDay(selectedDate)} className="flex-1 bg-white border border-slate-300 text-slate-500 py-2 md:py-2.5 rounded-xl text-[10px] md:text-[11px] font-black active:scale-95 transition-all">リセット</button>
                                                 )}
                                             </div>
                                         </div>
@@ -257,30 +257,30 @@
                                         getSlotsForDate(selectedDate).map(slot => {
                                             const booking = bookings.find(b => b.date === format(selectedDate, 'yyyy-MM-dd') && b.timeSlot === slot);
                                             return (
-                                                <div key={slot} className="p-4 rounded-2xl border-2 flex items-center justify-between border-slate-100 bg-white shadow-sm">
+                                                <div key={slot} className="p-3 md:p-4 rounded-xl md:rounded-2xl border flex items-center justify-between border-slate-100 bg-white shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <span className="font-black text-slate-700">{slot}</span>
+                                                        <span className="font-black text-slate-700 text-xs md:text-base">{slot}</span>
                                                         {role === 'ADVISOR' && !booking && (
-                                                            <button onClick={() => removeSpecialSlot(selectedDate, slot)} className="text-[10px] text-red-400 font-bold text-left hover:underline">この枠を消す</button>
+                                                            <button onClick={() => removeSpecialSlot(selectedDate, slot)} className="text-[8px] md:text-[10px] text-red-400 font-bold text-left hover:underline">この枠を消す</button>
                                                         )}
                                                     </div>
                                                     {booking ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-[11px] font-black">{booking.bandName}</span>
-                                                                <span className="text-[9px] font-bold text-slate-400 mt-1">{booking.memberCount || '2'}人</span>
+                                                        <div className="flex items-center gap-1 md:gap-2">
+                                                            <div className="flex flex-col items-end shrink-0 max-w-[120px] md:max-w-none">
+                                                                <span className="bg-indigo-600 text-white px-2 md:px-3 py-1 md:py-1.5 rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black truncate w-full text-center">{booking.bandName}</span>
+                                                                <span className="text-[8px] md:text-[9px] font-bold text-slate-400 mt-0.5 md:mt-1">{booking.memberCount || '2'}人</span>
                                                             </div>
-                                                            <button onClick={() => setConfirmingDeleteId(booking.id)} className="p-2 text-slate-300 hover:text-red-500"><TrashIcon className="w-5 h-5" /></button>
+                                                            <button onClick={() => setConfirmingDeleteId(booking.id)} className="p-1.5 md:p-2 text-slate-300 hover:text-red-500"><TrashIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
                                                         </div>
                                                     ) : (
-                                                        <div className="flex gap-2 items-center">
-                                                            <div className="flex flex-col gap-1.5">
-                                                                <input id={`band-${slot}`} placeholder="バンド名" className="w-28 px-3 py-2 border rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm" />
-                                                                <select id={`count-${slot}`} className="w-full px-3 py-1.5 border rounded-xl text-[10px] font-black outline-none bg-white shadow-sm">
+                                                        <div className="flex gap-1.5 md:gap-2 items-center">
+                                                            <div className="flex flex-col gap-1 md:gap-1.5 shrink-0">
+                                                                <input id={`band-${slot}`} placeholder="バンド名" className="w-24 md:w-32 px-2 md:px-3 py-1.5 md:py-2 border rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm" />
+                                                                <select id={`count-${slot}`} className="w-full px-2 md:px-3 py-1 md:py-1.5 border rounded-lg md:rounded-xl text-[10px] font-black outline-none bg-white shadow-sm">
                                                                     {[2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}人</option>)}
                                                                 </select>
                                                             </div>
-                                                            <button onClick={() => handleAddBooking(format(selectedDate, 'yyyy-MM-dd'), slot, document.getElementById(`band-${slot}`).value, document.getElementById(`count-${slot}`).value)} className="bg-indigo-600 text-white p-3 rounded-xl shadow-lg shadow-indigo-100 active:scale-90 transition-all"><PlusIcon className="w-5 h-5" /></button>
+                                                            <button onClick={() => handleAddBooking(format(selectedDate, 'yyyy-MM-dd'), slot, document.getElementById(`band-${slot}`).value, document.getElementById(`count-${slot}`).value)} className="bg-indigo-600 text-white p-2.5 md:p-3 rounded-xl shadow-lg active:scale-90 transition-all"><PlusIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -297,41 +297,41 @@
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-6 bg-slate-50 border-t flex justify-end">
-                                    <button onClick={() => setIsBookingModalOpen(false)} className="px-10 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black active:scale-95 transition-all">閉じる</button>
+                                <div className="p-4 md:p-6 bg-slate-50 border-t flex justify-end">
+                                    <button onClick={() => setIsBookingModalOpen(false)} className="w-full md:w-auto px-10 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black active:scale-95 transition-all text-xs md:text-base">閉じる</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {isSettingsModalOpen && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-                                <div className="bg-amber-500 p-8 text-white">
-                                    <h3 className="text-2xl font-black tracking-tighter">週間スケジュールの管理</h3>
-                                    <p className="text-[10px] font-bold text-amber-100 uppercase tracking-widest mt-1 underline">ここで設定した時間は、毎週自動的に繰り返されます</p>
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4">
+                            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                                <div className="bg-amber-500 p-6 md:p-8 text-white shrink-0">
+                                    <h3 className="text-xl md:text-2xl font-black tracking-tighter">週間スケジュールの管理</h3>
+                                    <p className="text-[8px] md:text-[10px] font-bold text-amber-100 uppercase tracking-widest mt-1 underline italic">毎週自動的に繰り返されるデフォルトの予約枠を設定します</p>
                                 </div>
-                                <div className="p-8 overflow-y-auto space-y-4">
+                                <div className="p-4 md:p-8 overflow-y-auto space-y-3 md:space-y-4">
                                     {DAYS_OF_WEEK.map((day, idx) => {
                                         const r = rules.find(x => x.dayOfWeek === idx);
                                         return (
-                                            <div key={day} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
-                                                <span className="w-12 font-black text-slate-800">{day}曜</span>
-                                                <div className="flex flex-wrap gap-2 flex-grow">
+                                            <div key={day} className="p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                                                <span className="w-full md:w-12 font-black text-slate-800 text-sm">{day}曜</span>
+                                                <div className="flex flex-wrap gap-1.5 md:gap-2 flex-grow">
                                                     {r?.slots.map(s => (
-                                                        <span key={s} className="bg-white border px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-sm">
+                                                        <span key={s} className="bg-white border px-2 md:px-3 py-1 md:py-1.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-black flex items-center gap-2 shadow-sm">
                                                             {s} <button onClick={() => updateAndSync(bookings, rules.map(x => x.dayOfWeek === idx ? {...x, slots: x.slots.filter(y => y !== s)} : x), specialSchedules)} className="text-slate-300 hover:text-red-500">✕</button>
                                                         </span>
                                                     ))}
-                                                    <button onClick={() => { const ns = prompt("例: 16:00-17:00"); if(ns) updateAndSync(bookings, rules.map(x => x.dayOfWeek === idx ? {...x, slots: [...x.slots, ns].sort()} : x), specialSchedules); }} className="bg-white border-2 border-dashed border-amber-300 text-amber-600 px-3 py-1.5 rounded-xl text-xs font-black hover:bg-amber-50 active:scale-95 transition-all">+ 追加</button>
+                                                    <button onClick={() => { const ns = prompt("例: 16:00-17:00"); if(ns) updateAndSync(bookings, rules.map(x => x.dayOfWeek === idx ? {...x, slots: [...x.slots, ns].sort()} : x), specialSchedules); }} className="bg-white border-2 border-dashed border-amber-300 text-amber-600 px-3 py-1.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-black hover:bg-amber-50">+ 追加</button>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
-                                <div className="p-6 bg-slate-50 border-t flex justify-end gap-3">
-                                    <button onClick={() => { if(confirm("全てのデータを初期化しますか？")) updateAndSync([], DEFAULT_RULES, []); }} className="px-6 py-4 bg-red-100 text-red-600 rounded-2xl font-black text-xs hover:bg-red-600 hover:text-white transition-all">全リセット</button>
-                                    <button onClick={() => setIsSettingsModalOpen(false)} className="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl active:scale-95 transition-all">設定完了</button>
+                                <div className="p-4 md:p-6 bg-slate-50 border-t flex flex-col md:flex-row justify-end gap-2 md:gap-3">
+                                    <button onClick={() => { if(confirm("初期化しますか？")) updateAndSync([], DEFAULT_RULES, []); }} className="px-4 py-3 text-red-600 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs hover:bg-red-50 transition-all text-center">全リセット</button>
+                                    <button onClick={() => setIsSettingsModalOpen(false)} className="px-10 md:px-12 py-3 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black shadow-xl active:scale-95 transition-all text-sm">設定完了</button>
                                 </div>
                             </div>
                         </div>
@@ -343,6 +343,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
-<script type="module" src="/index.tsx"></script>
 </body>
 </html>
