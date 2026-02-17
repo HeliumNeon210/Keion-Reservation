@@ -21,7 +21,7 @@ const DEFAULT_RULES = [
 ];
 const DAYS_OF_WEEK = ["日", "月", "火", "水", "木", "金", "土"];
 
-// --- アプリケーション本体 ---
+// --- メインアプリケーション ---
 const App = () => {
     // 状態管理
     const [role, setRole] = useState('STUDENT'); 
@@ -43,7 +43,7 @@ const App = () => {
     const [weeklyAddingDayIdx, setWeeklyAddingDayIdx] = useState(null);
     const [weeklySlotInput, setWeeklySlotInput] = useState("");
 
-    // 隠しコマンド（2秒以内に3回連打）用
+    // 隠しコマンド（3回連打）用
     const [tapCount, setTapCount] = useState(0);
     const [lastTapTime, setLastTapTime] = useState(0);
 
@@ -82,7 +82,7 @@ const App = () => {
         saveToCloud(nb, nr, ns);
     };
 
-    // --- 各種ロジック ---
+    // --- ロジック ---
     const handleSecretTap = () => {
         if (role === 'ADVISOR') return;
         const now = Date.now();
@@ -156,7 +156,6 @@ const App = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-            {/* ヘッダー */}
             <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-xl px-4 py-3">
                 <div className="max-w-5xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -194,9 +193,9 @@ const App = () => {
 
             <main className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
                 <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm border border-slate-200">
-                    <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><ChevronLeftIcon className="w-5 h-5" /></button>
+                    <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-slate-100 rounded-xl"><ChevronLeftIcon className="w-5 h-5" /></button>
                     <h2 className="text-lg font-black text-slate-800">{format(currentMonth, 'yyyy年 MMMM', { locale: ja })}</h2>
-                    <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
+                    <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-slate-100 rounded-xl"><ChevronRightIcon className="w-5 h-5" /></button>
                 </div>
 
                 <div className="calendar-grid">
@@ -222,7 +221,7 @@ const App = () => {
                                 className={`bg-white min-h-[5.5rem] md:min-h-[10rem] p-2 rounded-2xl border transition-all active:scale-95 cursor-pointer flex flex-col ${past ? 'opacity-30' : 'hover:border-indigo-400 shadow-sm'}`}
                             >
                                 <div className="flex justify-between items-start mb-1">
-                                    <span className={`text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-lg ${isToday ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-400'}`}>{format(date, 'd')}</span>
+                                    <span className={`text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-lg ${isToday ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}>{format(date, 'd')}</span>
                                     <div className="flex gap-1">
                                         {isModified && !past && <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>}
                                         {hasAvailability && !past && <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_4px_rgba(52,211,153,0.5)]"></div>}
@@ -247,10 +246,10 @@ const App = () => {
                     <div className="bg-white rounded-t-3xl md:rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                         <div className="bg-slate-900 p-6 text-white shrink-0 flex justify-between items-center">
                             <div>
-                                <h3 className="text-xl font-black text-white">{format(selectedDate, 'M月 d日 (E)', { locale: ja })}</h3>
-                                <p className="text-[10px] font-bold uppercase opacity-40 tracking-[0.2em] text-white">{role === 'ADVISOR' ? 'ADMIN CONSOLE' : 'RESERVATION'}</p>
+                                <h3 className="text-xl font-black">{format(selectedDate, 'M月 d日 (E)', { locale: ja })}</h3>
+                                <p className="text-[10px] font-bold uppercase opacity-40 tracking-[0.2em]">{role === 'ADVISOR' ? 'ADMIN CONSOLE' : 'RESERVATION'}</p>
                             </div>
-                            <button onClick={() => setIsBookingModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">✕</button>
+                            <button onClick={() => setIsBookingModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">✕</button>
                         </div>
 
                         <div className="p-4 space-y-4 overflow-y-auto flex-1 bg-white">
@@ -266,7 +265,7 @@ const App = () => {
                                                     autoFocus
                                                     type="text" placeholder="16:00-17:00" 
                                                     value={newSpecialInput} onChange={e => setNewSpecialInput(e.target.value)}
-                                                    className="flex-1 px-3 py-2 border-2 border-amber-300 rounded-xl text-xs font-bold outline-none shadow-sm"
+                                                    className="flex-1 px-3 py-2 border-2 border-amber-300 rounded-xl text-xs font-bold outline-none"
                                                 />
                                                 <button onClick={addSpecialSlot} className="bg-amber-400 p-2.5 rounded-xl text-slate-900 shadow-md"><CheckIcon className="w-5 h-5" /></button>
                                                 <button onClick={() => {setIsAddingMode(false); setNewSpecialInput("");}} className="bg-white border border-slate-300 p-2.5 rounded-xl text-slate-400"><XMarkIcon className="w-5 h-5" /></button>
@@ -276,7 +275,7 @@ const App = () => {
                                             <button onClick={() => {
                                                 const ds = format(selectedDate, 'yyyy-MM-dd');
                                                 updateAndSync(bookings, rules, specialSchedules.filter(s => s.date !== ds));
-                                            }} className="w-full bg-slate-200 text-slate-500 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest">通常に戻す</button>
+                                            }} className="w-full bg-slate-200 text-slate-500 py-2 rounded-xl text-[9px] font-black uppercase">通常に戻す</button>
                                         )}
                                     </div>
                                 </div>
@@ -284,8 +283,8 @@ const App = () => {
 
                             <div className="space-y-3">
                                 {getSlotsForDate(selectedDate).length === 0 ? (
-                                    <div className="py-20 flex flex-col items-center justify-center text-center bg-slate-50 rounded-3xl border border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">No Available Slots</p>
+                                    <div className="py-20 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-3xl border border-slate-100">
+                                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No Available Slots</p>
                                     </div>
                                 ) : (
                                     getSlotsForDate(selectedDate).map(slot => {
@@ -347,7 +346,7 @@ const App = () => {
                                                                 memberCount:count || "2"
                                                             }];
                                                             updateAndSync(nb, rules, specialSchedules);
-                                                        }} className="bg-indigo-600 text-white p-3.5 rounded-2xl active:scale-90 shadow-md h-fit transition-transform shadow-indigo-100"><PlusIcon className="w-5 h-5" /></button>
+                                                        }} className="bg-indigo-600 text-white p-3.5 rounded-2xl active:scale-90 shadow-md h-fit transition-transform"><PlusIcon className="w-5 h-5" /></button>
                                                     </div>
                                                 )}
                                             </div>
@@ -370,7 +369,7 @@ const App = () => {
                             )}
                         </div>
 
-                        <div className="p-6 bg-slate-50 border-t flex justify-center shadow-inner">
+                        <div className="p-6 bg-slate-50 border-t flex justify-center">
                             <button onClick={() => setIsBookingModalOpen(false)} className="w-full bg-white border-2 border-slate-200 py-3 rounded-2xl font-black text-xs text-slate-500 shadow-sm uppercase tracking-widest active:scale-95 transition-all">Close</button>
                         </div>
                     </div>
@@ -381,7 +380,7 @@ const App = () => {
             {isSettingsModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={() => setIsSettingsModalOpen(false)}>
                     <div className="bg-white rounded-[2.5rem] w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-white/20" onClick={e => e.stopPropagation()}>
-                        <div className="bg-amber-500 p-8 text-white shrink-0 relative overflow-hidden">
+                        <div className="bg-amber-500 p-8 text-white shrink-0 relative overflow-hidden text-white">
                             <h3 className="text-xl font-black uppercase tracking-tight text-white">Weekly Settings</h3>
                             <p className="text-amber-100 text-[10px] font-bold uppercase tracking-widest opacity-70 text-white">週間デフォルト設定</p>
                         </div>
