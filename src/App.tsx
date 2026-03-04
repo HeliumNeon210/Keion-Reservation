@@ -47,18 +47,34 @@ export default function App() {
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '';
+    const str = String(timeStr).trim();
+    
     // Handle GAS ISO format: 1899-12-30T07:00:00.000Z
-    if (timeStr.includes('T') && timeStr.includes('Z')) {
+    if (str.includes('T') && str.includes('Z')) {
       try {
-        const date = new Date(timeStr);
+        const date = new Date(str);
         const hours = date.getUTCHours().toString().padStart(2, '0');
         const minutes = date.getUTCMinutes().toString().padStart(2, '0');
         return `${hours}:${minutes}`;
-      } catch (e) {
-        return timeStr;
-      }
+      } catch (e) {}
     }
-    return timeStr;
+    
+    // Handle HH:mm:ss or HH:mm
+    const parts = str.split(':');
+    if (parts.length >= 2) {
+      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+    }
+    
+    return str;
+  };
+
+  const formatDate = (dateVal: any) => {
+    if (!dateVal) return '';
+    if (dateVal instanceof Date) {
+      return format(dateVal, 'yyyy-MM-dd');
+    }
+    // Handle YYYY/MM/DD -> YYYY-MM-DD
+    return String(dateVal).replace(/\//g, '-').split('T')[0];
   };
 
   // Admin secret entry logic
@@ -80,16 +96,17 @@ export default function App() {
         apiService.getAvailableSlots()
       ]);
       
-      // Clean up time strings from GAS
+      // Clean up time and date strings from GAS
       const cleanedReservations = resData.map(r => ({
         ...r,
+        date: formatDate(r.date),
         startTime: formatTime(r.startTime)
       }));
       
       const cleanedSlots = {
         recurring: slotsData.recurring.map(s => ({ ...s, startTime: formatTime(s.startTime) })),
-        extra: slotsData.extra.map(s => ({ ...s, startTime: formatTime(s.startTime) })),
-        blocked: slotsData.blocked.map(s => ({ ...s, startTime: formatTime(s.startTime) }))
+        extra: slotsData.extra.map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) })),
+        blocked: slotsData.blocked.map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) }))
       };
 
       setReservations(cleanedReservations);
