@@ -27,7 +27,7 @@ import {
   X,
   Calendar as CalendarIcon
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
 import { Reservation, AvailableSlot, SlotResponse } from './types';
 
