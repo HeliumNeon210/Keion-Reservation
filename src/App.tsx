@@ -27,7 +27,7 @@ import {
   X,
   Calendar as CalendarIcon
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
 import { Reservation, AvailableSlot, SlotResponse } from './types';
 
@@ -44,8 +44,6 @@ export default function App() {
   const [logoTapCount, setLogoTapCount] = useState(0);
   const [addingSlotDay, setAddingSlotDay] = useState<number | null>(null);
   const [newSlotTime, setNewSlotTime] = useState('');
-  const [deletingAvailableId, setDeletingAvailableId] = useState<number | string | null>(null);
-  const [isAddingAvailable, setIsAddingAvailable] = useState(false);
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '';
@@ -100,17 +98,25 @@ export default function App() {
         apiService.getAvailableSlots()
       ]);
       
-      // Clean up time and date strings from GAS
-      const cleanedReservations = resData.map(r => ({
-        ...r,
-        date: formatDate(r.date),
-        startTime: formatTime(r.startTime)
-      }));
+      // Clean up time and date strings from GAS, filtering out invalid entries
+      const cleanedReservations = (Array.isArray(resData) ? resData : [])
+        .filter(r => r && typeof r === 'object')
+        .map(r => ({
+          ...r,
+          date: formatDate(r.date),
+          startTime: formatTime(r.startTime)
+        }));
       
       const cleanedSlots = {
-        recurring: slotsData.recurring.map(s => ({ ...s, startTime: formatTime(s.startTime) })),
-        extra: slotsData.extra.map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) })),
-        blocked: slotsData.blocked.map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) }))
+        recurring: (Array.isArray(slotsData?.recurring) ? slotsData.recurring : [])
+          .filter(s => s && typeof s === 'object')
+          .map(s => ({ ...s, startTime: formatTime(s.startTime) })),
+        extra: (Array.isArray(slotsData?.extra) ? slotsData.extra : [])
+          .filter(s => s && typeof s === 'object')
+          .map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) })),
+        blocked: (Array.isArray(slotsData?.blocked) ? slotsData.blocked : [])
+          .filter(s => s && typeof s === 'object')
+          .map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) }))
       };
 
       setReservations(cleanedReservations);
@@ -159,39 +165,30 @@ export default function App() {
   };
 
   const handleDeleteReservation = async (id: number | string) => {
-    console.log('Deleting reservation:', id);
-    // Remove confirm for now to see if it's the issue in iframe
+    if (!confirm('この予約を削除しますか？')) return;
     try {
       await apiService.deleteReservation(id);
-      console.log('Reservation deleted successfully');
       fetchData();
     } catch (error) {
-      console.error('Failed to delete reservation:', error);
       alert('削除に失敗しました。');
     }
   };
 
   const handleAddAvailableSlot = async (dayOfWeek: number, startTime: string) => {
     try {
-      setIsAddingAvailable(true);
       await apiService.addAvailableSlot({ dayOfWeek, startTime });
       fetchData();
     } catch (error) {
       alert('追加に失敗しました。');
-    } finally {
-      setIsAddingAvailable(false);
     }
   };
 
   const handleDeleteAvailableSlot = async (id: number | string) => {
     try {
-      setDeletingAvailableId(id);
       await apiService.deleteAvailableSlot(id);
       fetchData();
     } catch (error) {
       alert('削除に失敗しました。');
-    } finally {
-      setDeletingAvailableId(null);
     }
   };
 
@@ -294,14 +291,9 @@ export default function App() {
                         <span className="text-sm font-bold text-indigo-600">{slot.startTime}</span>
                         <button 
                           onClick={() => handleDeleteAvailableSlot(slot.id)}
-                          disabled={deletingAvailableId === slot.id}
-                          className="text-rose-500 hover:bg-rose-50 p-1 rounded-lg transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
+                          className="text-rose-500 hover:bg-rose-50 p-1 rounded-lg transition-colors"
                         >
-                          {deletingAvailableId === slot.id ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
@@ -320,20 +312,15 @@ export default function App() {
                         <div className="flex gap-1">
                           <button 
                             onClick={() => {
-                              if (newSlotTime && !isAddingAvailable) {
+                              if (newSlotTime) {
                                 handleAddAvailableSlot(day, newSlotTime);
                                 setAddingSlotDay(null);
                                 setNewSlotTime('');
                               }
                             }}
-                            disabled={isAddingAvailable}
-                            className="flex-1 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:hover:bg-amber-500"
+                            className="flex-1 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-colors"
                           >
-                            {isAddingAvailable ? (
-                              <RefreshCw className="w-4 h-4 animate-spin mx-auto" />
-                            ) : (
-                              '追加'
-                            )}
+                            追加
                           </button>
                           <button 
                             onClick={() => {
@@ -485,29 +472,22 @@ function ReservationModal({
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
   const [isAddingExtra, setIsAddingExtra] = useState(false);
   const [extraTime, setExtraTime] = useState('18:00');
-  const [isAddingExtraSubmitting, setIsAddingExtraSubmitting] = useState(false);
-  const [removingSlotTime, setRemovingSlotTime] = useState<string | null>(null);
-  const [restoringSlotTime, setRestoringSlotTime] = useState<string | null>(null);
 
   const dateStr = format(date, 'yyyy-MM-dd');
 
   const handleAdminAddSlot = async () => {
     if (!extraTime) return;
     try {
-      setIsAddingExtraSubmitting(true);
       await apiService.addExtraSlot(dateStr, extraTime);
       setIsAddingExtra(false);
       onRefresh();
     } catch (error) {
       alert('追加に失敗しました。');
-    } finally {
-      setIsAddingExtraSubmitting(false);
     }
   };
 
   const handleAdminRemoveSlot = async (time: string) => {
     try {
-      setRemovingSlotTime(time);
       // Check if it was an extra slot
       const isExtra = slotData.extra.some(s => s.date === dateStr && s.startTime === time);
       if (isExtra) {
@@ -519,20 +499,15 @@ function ReservationModal({
       onRefresh();
     } catch (error) {
       alert('削除に失敗しました。');
-    } finally {
-      setRemovingSlotTime(null);
     }
   };
 
   const handleAdminRestoreSlot = async (time: string) => {
     try {
-      setRestoringSlotTime(time);
       await apiService.deleteBlockedSlot(dateStr, time);
       onRefresh();
     } catch (error) {
       alert('復元に失敗しました。');
-    } finally {
-      setRestoringSlotTime(null);
     }
   };
 
@@ -595,41 +570,23 @@ function ReservationModal({
                   {actualSlots.map(time => (
                     <div key={time} className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-amber-200 text-xs font-bold">
                       {time}
-                      <button
-                        onClick={() => handleAdminRemoveSlot(time)}
-                        disabled={removingSlotTime === time}
-                        className="text-rose-500 hover:bg-rose-50 rounded p-0.5 disabled:opacity-50 disabled:hover:bg-transparent"
-                        title="この日だけ削除"
-                      >
-                        {removingSlotTime === time ? (
-                          <RefreshCw className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3 h-3" />
-                        )}
+                      <button onClick={() => handleAdminRemoveSlot(time)} className="text-rose-500 hover:bg-rose-50 rounded p-0.5" title="この日だけ削除">
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   ))}
                   {blockedTimes.map(time => (
                     <div key={time} className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-400 line-through">
                       {time}
-                      <button
-                        onClick={() => handleAdminRestoreSlot(time)}
-                        disabled={restoringSlotTime === time}
-                        className="text-emerald-500 hover:bg-emerald-50 rounded p-0.5 disabled:opacity-50 disabled:hover:bg-transparent"
-                        title="枠を復元"
-                      >
-                        {restoringSlotTime === time ? (
-                          <RefreshCw className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Plus className="w-3 h-3" />
-                        )}
+                      <button onClick={() => handleAdminRestoreSlot(time)} className="text-emerald-500 hover:bg-emerald-50 rounded p-0.5" title="枠を復元">
+                        <Plus className="w-3 h-3" />
                       </button>
                     </div>
                   ))}
                 </div>
                 
                 {isAddingExtra ? (
-                  <div className="flex gap-2 bg白 p-2 rounded-xl border border-amber-200 shadow-sm">
+                  <div className="flex gap-2 bg-white p-2 rounded-xl border border-amber-200 shadow-sm">
                     <input 
                       type="time" 
                       value={extraTime}
@@ -639,14 +596,9 @@ function ReservationModal({
                     />
                     <button 
                       onClick={handleAdminAddSlot}
-                      disabled={isAddingExtraSubmitting}
-                      className="px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:hover:bg-amber-500"
+                      className="px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-colors"
                     >
-                      {isAddingExtraSubmitting ? (
-                        <RefreshCw className="w-3 h-3 animate-spin" />
-                      ) : (
-                        '追加'
-                      )}
+                      追加
                     </button>
                     <button 
                       onClick={() => setIsAddingExtra(false)}
