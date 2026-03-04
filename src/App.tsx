@@ -45,6 +45,22 @@ export default function App() {
   const [addingSlotDay, setAddingSlotDay] = useState<number | null>(null);
   const [newSlotTime, setNewSlotTime] = useState('');
 
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    // Handle GAS ISO format: 1899-12-30T07:00:00.000Z
+    if (timeStr.includes('T') && timeStr.includes('Z')) {
+      try {
+        const date = new Date(timeStr);
+        const hours = date.getUTCHours().toString().padStart(2, '0');
+        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      } catch (e) {
+        return timeStr;
+      }
+    }
+    return timeStr;
+  };
+
   // Admin secret entry logic
   useEffect(() => {
     if (logoTapCount >= 4) {
@@ -63,8 +79,21 @@ export default function App() {
         apiService.getReservations(monthStr),
         apiService.getAvailableSlots()
       ]);
-      setReservations(resData);
-      setSlotData(slotsData);
+      
+      // Clean up time strings from GAS
+      const cleanedReservations = resData.map(r => ({
+        ...r,
+        startTime: formatTime(r.startTime)
+      }));
+      
+      const cleanedSlots = {
+        recurring: slotsData.recurring.map(s => ({ ...s, startTime: formatTime(s.startTime) })),
+        extra: slotsData.extra.map(s => ({ ...s, startTime: formatTime(s.startTime) })),
+        blocked: slotsData.blocked.map(s => ({ ...s, startTime: formatTime(s.startTime) }))
+      };
+
+      setReservations(cleanedReservations);
+      setSlotData(cleanedSlots);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
