@@ -53,8 +53,10 @@ export default function App() {
     if (str.includes('T') && str.includes('Z')) {
       try {
         const date = new Date(str);
-        const hours = date.getUTCHours().toString().padStart(2, '0');
-        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        // Use local hours because GAS "Time" objects are often relative to the spreadsheet's TZ
+        // but represented as UTC in ISO strings.
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
         return `${hours}:${minutes}`;
       } catch (e) {}
     }
