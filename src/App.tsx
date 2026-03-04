@@ -98,17 +98,25 @@ export default function App() {
         apiService.getAvailableSlots()
       ]);
       
-      // Clean up time and date strings from GAS
-      const cleanedReservations = resData.map(r => ({
-        ...r,
-        date: formatDate(r.date),
-        startTime: formatTime(r.startTime)
-      }));
+      // Clean up time and date strings from GAS, filtering out invalid entries
+      const cleanedReservations = (Array.isArray(resData) ? resData : [])
+        .filter(r => r && typeof r === 'object')
+        .map(r => ({
+          ...r,
+          date: formatDate(r.date),
+          startTime: formatTime(r.startTime)
+        }));
       
       const cleanedSlots = {
-        recurring: slotsData.recurring.map(s => ({ ...s, startTime: formatTime(s.startTime) })),
-        extra: slotsData.extra.map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) })),
-        blocked: slotsData.blocked.map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) }))
+        recurring: (Array.isArray(slotsData?.recurring) ? slotsData.recurring : [])
+          .filter(s => s && typeof s === 'object')
+          .map(s => ({ ...s, startTime: formatTime(s.startTime) })),
+        extra: (Array.isArray(slotsData?.extra) ? slotsData.extra : [])
+          .filter(s => s && typeof s === 'object')
+          .map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) })),
+        blocked: (Array.isArray(slotsData?.blocked) ? slotsData.blocked : [])
+          .filter(s => s && typeof s === 'object')
+          .map(s => ({ ...s, date: formatDate(s.date), startTime: formatTime(s.startTime) }))
       };
 
       setReservations(cleanedReservations);
