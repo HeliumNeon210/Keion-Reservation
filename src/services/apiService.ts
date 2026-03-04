@@ -26,13 +26,25 @@ async function callGasApi(action: string, data?: any): Promise<any> {
         },
         body: JSON.stringify({ action, ...data })
       });
-      const result = await res.json();
+      const text = await res.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        throw new Error('GASからの応答が不正です。URLが正しいか確認してください。');
+      }
       if (result.error) throw new Error(result.error);
       return result;
     } else {
       const params = new URLSearchParams({ action, ...data });
       const res = await fetch(`${gasUrl}?${params.toString()}`);
-      const result = await res.json();
+      const text = await res.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        throw new Error('GASからの応答が不正です。URLが正しいか確認してください。');
+      }
       if (result.error) throw new Error(result.error);
       return result;
     }
