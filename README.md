@@ -77,3 +77,10 @@ jobs:
 1. リポジトリの「Settings」 > 「Pages」で、Build and deployment の Source を `Deploy from a branch` にし、Branch を `gh-pages` / `/(root)` に設定して保存します。
 
 これで、GitHub PagesのURLからアプリにアクセスでき、データはGoogleスプレッドシートに保存されるようになります。
+
+### 困ったときには
+Google AI Studio
+Cursor
+Google Antigravity Download
+Login Deep Control
+これらをgithubのcliに接続して変更する。ただしCursor以外の互換性は不明
