@@ -363,10 +363,7 @@ export default function App() {
             actualSlots={calculateActualSlots(selectedDate)}
             slotData={slotData}
             onClose={() => setIsModalOpen(false)}
-            onSuccess={() => {
-              setIsModalOpen(false);
-              fetchData();
-            }}
+            onSuccess={fetchData}
             onDelete={handleDeleteReservation}
             onRefresh={fetchData}
           />
@@ -461,7 +458,7 @@ function ReservationModal({
   actualSlots: string[];
   slotData: SlotResponse;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: () => Promise<void>;
   onDelete: (id: number | string) => Promise<void>;
   onRefresh: () => void;
 }) {
@@ -469,6 +466,7 @@ function ReservationModal({
   const [memberCount, setMemberCount] = useState(2);
   const [selectedTime, setSelectedTime] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
   const [isAddingExtra, setIsAddingExtra] = useState(false);
   const [extraTime, setExtraTime] = useState('18:00');
@@ -523,13 +521,26 @@ function ReservationModal({
         bandName,
         memberCount
       });
-      onSuccess();
+      await onSuccess();
+      setShowSuccessMessage(true);
     } catch (error: any) {
       alert(error.message || '予約に失敗しました。');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedTime && reservations.some(r => r.startTime === selectedTime)) {
+      setSelectedTime('');
+    }
+  }, [reservations, selectedTime]);
+
+  useEffect(() => {
+    if (!showSuccessMessage) return;
+    const timer = setTimeout(() => setShowSuccessMessage(false), 2500);
+    return () => clearTimeout(timer);
+  }, [showSuccessMessage]);
 
   const blockedTimes = slotData.blocked.filter(s => s.date === dateStr).map(s => s.startTime);
 
@@ -756,6 +767,11 @@ function ReservationModal({
                   {isSubmitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                   予約を確定する
                 </button>
+                {showSuccessMessage && (
+                  <p className="text-sm font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-center">
+                    予約されました
+                  </p>
+                )}
               </form>
             )}
           </div>
